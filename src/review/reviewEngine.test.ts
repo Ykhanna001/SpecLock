@@ -43,6 +43,15 @@ describe('deterministic review engine', () => {
     expect(result.findings).toEqual([])
   })
 
+  it('classifies an explicit external transmission of identity data as a definite conflict', () => {
+    const proposal = "Add a third-party analytics integration that sends each user's email address and account identifier to an external service."
+    const result = reviewProposal(northstarBaseline, proposal, 'custom')
+
+    expect(result.status).toBe('definite_conflict')
+    expect(result.findings.map((finding) => finding.evidence[0].requirementId)).toEqual(['SEC-001', 'PRIV-001', 'EXC-001'])
+    expect(result.findings.every((finding) => finding.evidence[0].proposalExcerpt === proposal)).toBe(true)
+  })
+
   it('rejects evidence with a fabricated requirement ID or mismatched proposal quote', () => {
     const result = reviewProposal(northstarBaseline, seedScenarios[0].text, 'definite')
     const finding = result.findings[0]

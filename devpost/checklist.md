@@ -45,13 +45,13 @@ Build mode: Fast mode
   PRD ref: `prd.md > The Core Journey`, `prd.md > Acceptance Criteria`, `prd.md > States and Boundaries`
   Spec ref: `spec.md > Test Strategy`, `spec.md > Important Failure Modes`, `spec.md > Traceability Matrix`, `spec.md > Security and Privacy`
   Build: No new product features. Add only defect fixes, final accessibility and responsive checks, session fallback fixes if tests expose defects, no-external-network verification, and exact local demo/run documentation.
-  Verify (mechanical): Run `npm test`, `npm run build`, inspect test coverage of all acceptance groups, start the dev server, and exercise the definite, compatible, ambiguous, revise, accept, and reject paths without network access.
-  Learner check: Start from the running app, complete the whole core journey in under one minute, and report any confusing hierarchy, missing evidence, or incorrect copy.
+  Verify (mechanical): `npm test` passes all 53 tests; `npm run lint`, `npx tsc -b`, `npm run build`, and `git diff --check` pass. Automated tests cover evidence integrity, deterministic outcomes, revision/history, and simulated `sessionStorage` restoration. The Codespace dev server returned the app page and local SVG successfully on port 5174; Vite selected that port because 5173 was already in use. No browser executable or automation package is available here, so live interaction and actual viewport rendering were not verified.
+  Learner check: Pending live browser exploration at desktop and narrow widths: run definite, compatible, ambiguous, revision/history, and refresh flows; check the header, proposal action, findings empty/populated states, and report any clipping or confusing copy.
   Commit: `Finalize SpecLock demo and verification`
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after Slice 2 the learner tries the workspace and seeded scenarios.
+- [ ] Early usable behavior explored — after Slice 2 the learner tries the workspace and seeded scenarios. Completion is not recorded in the available checklist history.
 - [ ] Final kick-the-tires exploration and feedback completed after Slice 4.
 
 ## Final Review
@@ -62,12 +62,14 @@ Build mode: Fast mode
 
 - [ ] Learning activity complete — plan-first familiar route connecting one approval criterion, review engine, and test
 - [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown as a reference guide (not as a completed learner tour)
 
-Activity and evidence: Pending implementation; actual engine, test, UI, and document references will be recorded after verification.
-Route and stops: Pending implementation.
-Edit outcome: Not established.
-Reflection: Not established.
-Activity mode: Not established.
+Activity and evidence: Created a reference-only guide from `src/App.tsx` (`runReview`, `FindingResult`, `ReviewHistory`, `ReviewComparisonPanel`), `src/state/reviewStore.ts` (`nextReviewVersion`), `src/review/reviewEngine.ts` (`reviewProposal`), and `src/review/evidence.ts` (`assertFindingEvidence`). Source paths were checked. No learner walkthrough or reflection was performed.
+Route and stops: Reference route only; no interactive code-tour stops completed. See `app-map.html`.
+Edit outcome: Not offered; no edit activity performed.
+Reflection: Not offered; no learner response recorded.
+Activity mode: Static source inspection and markup/link validation. The app map is a reference, not a completed learning activity.
 
 ## Revisions
+- Slice 4 browser exploration remains pending because this environment has no browser executable or automation package; the app is serving on port 5174 for live learner review. No behavior or baseline changes were made.
+- No changes were committed because the user explicitly requested that all work remain uncommitted.

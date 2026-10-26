@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Check, CircleDashed, FileWarning, History, LockKeyhole, Play, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Check, CircleDashed, FileWarning, GitBranch, History, LockKeyhole, PencilLine, Play, X } from 'lucide-react'
 import './App.css'
 import { northstarBaseline } from './data/northstarBaseline'
 import { seedScenarios, type SeedScenario } from './data/seedScenarios'
@@ -30,15 +30,12 @@ function loadAppStartup(): AppStartup {
   try {
     const loaded = hydrateReviewSession(window.sessionStorage)
     const active = loaded.session.reviewVersions.find((version) => version.id === loaded.session.activeVersionId)
-    const proposalText = loaded.session.proposalDraft.text || active?.proposalText || seedScenarios[0].text
-    const scenario = seedScenarios.find((item) => item.text === proposalText)
+    const proposalText = loaded.session.proposalDraft.text
     return {
       session: loaded.session,
-      scenarioId: loaded.session.proposalDraft.text
-        ? loaded.session.proposalDraft.scenarioId
-        : scenario?.id ?? 'custom',
+      scenarioId: loaded.session.proposalDraft.scenarioId,
       proposalText,
-      result: active && (!loaded.session.proposalDraft.text || active.proposalText === loaded.session.proposalDraft.text)
+      result: active && active.proposalText === proposalText
         ? active.result
         : null,
       storageIssue: loaded.issue,
@@ -46,8 +43,8 @@ function loadAppStartup(): AppStartup {
   } catch {
     return {
       session: initial,
-      scenarioId: 'definite',
-      proposalText: seedScenarios[0].text,
+      scenarioId: 'custom',
+      proposalText: '',
       result: null,
       storageIssue: 'unavailable',
     }
@@ -85,7 +82,7 @@ function App() {
   }
 
   const selectScenario = (scenario: SeedScenario) => {
-    updateDraft(scenario.text, scenario.id)
+    updateDraft(proposalText, scenario.id)
     setResult(null)
     setError('')
   }
@@ -157,48 +154,49 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand-block">
-          <div className="brand-mark" aria-hidden="true"><LockKeyhole size={16} /></div>
-          <span className="brand-name">SpecLock</span>
-          <span className="topbar-divider" />
-          <span className="project-name">Northstar Notes</span>
+          <div className="brand-mark" aria-hidden="true">
+            <img src="/speclock-mark.svg" alt="" />
+          </div>
+          <div className="brand-copy">
+            <span className="brand-name">SpecLock</span>
+            <span className="brand-descriptor">Evidence-backed change review</span>
+          </div>
+          <span className="topbar-divider" aria-hidden="true" />
+          <div className="project-context">
+            <span className="context-label">Active project</span>
+            <span className="project-name">Northstar Notes</span>
+          </div>
         </div>
         {storageIssue && <div className="storage-warning" role="status">{storageIssueMessage(storageIssue)}</div>}
-        <div className="review-status" aria-live="polite">
-          <span className={`status-dot ${result?.status ?? 'idle'}`} />
-          {result ? statusLabel(result.status) : 'Ready to review'}
+        <div className="topbar-context">
+          <span className="local-badge">Local review</span>
+          <div className={`review-status ${result ? result.status : 'idle'}`} aria-live="polite">
+            {result ? <OutcomeIcon status={result.status} /> : <span className="status-dot" aria-hidden="true" />}
+            <span>{result ? statusLabel(result.status) : 'Ready to review'}</span>
+          </div>
         </div>
       </header>
 
+      <section className="workspace-intro" aria-label="Review workspace">
+        <div>
+          <p className="eyebrow">Northstar Notes <span aria-hidden="true">/</span> Change review</p>
+          <h1>Review a proposed change</h1>
+          <p>Check the proposal against the project baseline. Findings include the source evidence behind each result.</p>
+        </div>
+        <span className="baseline-context"><LockKeyhole size={14} /> Immutable baseline</span>
+      </section>
+
       <div className="workspace-grid">
-        <aside className="baseline-panel" aria-label="Project baseline">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Project baseline</p>
-              <h2>Northstar Notes</h2>
-            </div>
-            <span className="immutable-badge">Immutable</span>
-          </div>
-
-          <div className="baseline-list">
-            {northstarBaseline.map((requirement) => (
-              <article className="baseline-item" key={requirement.id}>
-                <div className="baseline-meta">
-                  <code>{requirement.id}</code>
-                  <span>{requirement.category}</span>
-                </div>
-                <p>{requirement.sourceText}</p>
-              </article>
-            ))}
-          </div>
-        </aside>
-
         <section className="proposal-panel" aria-labelledby="proposal-heading">
           <div className="panel-heading proposal-heading">
-            <div>
-              <p className="eyebrow">Proposal</p>
-              <h2 id="proposal-heading">Describe the change</h2>
+            <div className="step-heading">
+              <span className="step-number">01</span>
+              <div>
+                <p className="eyebrow">Your input</p>
+                <h2 id="proposal-heading">Describe the change</h2>
+              </div>
             </div>
-            <span className="scenario-count">{seedScenarios.length} scenarios</span>
+            <span className="scenario-count">{seedScenarios.length} test categories</span>
           </div>
 
           <div className="scenario-tabs" role="group" aria-label="Seeded scenarios">
@@ -221,30 +219,62 @@ function App() {
             id="proposal-text"
             value={proposalText}
             onChange={(event) => {
-              updateDraft(event.target.value, 'custom')
+              updateDraft(event.target.value, scenarioId)
               setResult(null)
               setError('')
             }}
-            placeholder="Describe the proposed feature or implementation change..."
+            placeholder="Describe the product change you want to review..."
             spellCheck="true"
           />
+          <p className="editor-hint">Choose a test category if helpful; it will not supply example text. Enter your proposal here.</p>
 
           {error && <p className="input-error" role="alert">{error}</p>}
 
           <button className="review-button" type="button" onClick={runReview} disabled={isLoading}>
-            <Play size={15} fill="currentColor" />
+            {isLoading ? <CircleDashed size={16} /> : <Play size={15} fill="currentColor" />}
             {isLoading ? 'Reviewing...' : 'Review proposal'}
           </button>
+          <p className="review-local-note">Reviewed locally against the unchanged baseline</p>
         </section>
+
+        <aside className="baseline-panel" aria-label="Project baseline">
+          <div className="panel-heading">
+            <div className="step-heading">
+              <span className="step-number">02</span>
+              <div>
+                <p className="eyebrow">Reference</p>
+                <h2>Project baseline</h2>
+              </div>
+            </div>
+            <span className="immutable-badge">Immutable</span>
+          </div>
+
+          <div className="baseline-list">
+            {northstarBaseline.map((requirement) => (
+              <article className="baseline-item" key={requirement.id}>
+                <div className="baseline-meta">
+                  <code>{requirement.id}</code>
+                  <span>{requirement.category}</span>
+                </div>
+                <p>{requirement.sourceText}</p>
+              </article>
+            ))}
+          </div>
+        </aside>
 
         <section className="findings-panel" aria-labelledby="findings-heading">
           <div className="panel-heading findings-heading">
-            <div>
-              <p className="eyebrow">Review findings</p>
-              <h2 id="findings-heading">Evidence trail</h2>
+            <div className="step-heading">
+              <span className="step-number">03</span>
+              <div>
+                <p className="eyebrow">Review outcome</p>
+                <h2 id="findings-heading">Evidence &amp; findings</h2>
+              </div>
             </div>
             {result && <span className="finding-count">{result.findings.length} {result.findings.length === 1 ? 'finding' : 'findings'}</span>}
           </div>
+
+          {result && !isLoading && <OutcomeBanner result={result} />}
 
           {isLoading
             ? <LoadingResult />
@@ -280,6 +310,22 @@ function statusLabel(status: ReviewResult['status']): string {
   if (status === 'potential_conflict') return 'Potential conflict'
   if (status === 'no_conflict') return 'No conflicts detected'
   return 'Unable to assess'
+}
+
+function OutcomeIcon({ status }: { status: ReviewResult['status'] }) {
+  if (status === 'definite_conflict') return <AlertTriangle size={15} aria-hidden="true" />
+  if (status === 'potential_conflict') return <CircleDashed size={15} aria-hidden="true" />
+  if (status === 'no_conflict') return <Check size={15} aria-hidden="true" />
+  return <FileWarning size={15} aria-hidden="true" />
+}
+
+function OutcomeBanner({ result }: { result: ReviewResult }) {
+  return (
+    <div className={`outcome-banner ${result.status}`} aria-label="Review outcome" aria-live="polite">
+      <OutcomeIcon status={result.status} />
+      <span>{statusLabel(result.status)}</span>
+    </div>
+  )
 }
 
 function FindingResult({
@@ -372,14 +418,25 @@ function FindingCard({
         {finding.unresolvedQuestion && <p className="unresolved">Unresolved: {finding.unresolvedQuestion}</p>}
       </div>
       {(finding.status === 'unresolved' && onDecision || onRevise) && (
-        <div className="finding-actions" aria-label="Finding resolution actions">
-          {finding.status === 'unresolved' && onDecision && (
-            <>
-              <button type="button" className="decision-button accept" onClick={() => onDecision('accepted')}>Accept</button>
-              <button type="button" className="decision-button reject" onClick={() => onDecision('rejected')}>Reject</button>
-            </>
-          )}
-          {onRevise && <button type="button" className="decision-button revise" onClick={onRevise}>Revise</button>}
+        <div className="finding-action-group">
+          <p className="finding-action-note">These actions record a decision about this finding only; they do not approve the proposal.</p>
+          <div className="finding-actions" aria-label="Finding resolution actions">
+            {finding.status === 'unresolved' && onDecision && (
+              <>
+                <button type="button" className="decision-button accept" title="Accept this finding as a valid concern" onClick={() => onDecision('accepted')}>
+                  <Check size={14} aria-hidden="true" />Accept finding
+                </button>
+                <button type="button" className="decision-button reject" title="Dismiss this finding as incorrect or inapplicable" onClick={() => onDecision('rejected')}>
+                  <X size={14} aria-hidden="true" />Reject finding
+                </button>
+              </>
+            )}
+            {onRevise && (
+              <button type="button" className="decision-button revise" title="Edit this proposal and submit a new review version" onClick={onRevise}>
+                <PencilLine size={14} aria-hidden="true" />Revise proposal
+              </button>
+            )}
+          </div>
         </div>
       )}
       {finding.status !== 'unresolved' && (
@@ -405,6 +462,7 @@ function ReviewHistory({
   return (
     <nav className="review-history" aria-label="Review history">
       <div className="history-heading"><History size={13} /><span>Review history</span></div>
+      <p className="history-description">Independent reviews start a new thread. Revisions link to the review they changed.</p>
       <ol>
         {[...versions].reverse().map((version) => (
           <li key={version.id}>
@@ -413,15 +471,19 @@ function ReviewHistory({
               className={activeVersionId === version.id ? 'active' : ''}
               onClick={() => onSelect(version.id)}
               aria-current={activeVersionId === version.id ? 'true' : undefined}
+              aria-label={`v${version.version}, ${statusLabel(version.result.status)}, ${version.parentVersionId
+                ? `Revision of v${versions.find((parent) => parent.id === version.parentVersionId)?.version ?? 'unknown'}`
+                : 'Original review, independent review'}`}
             >
-              <span>v{version.version}</span>
-              <span>{statusLabel(version.result.status)}</span>
-              <small>
+              <span className="history-version">v{version.version}</span>
+              <span className="history-status">{statusLabel(version.result.status)}</span>
+              <span className="history-relation">
                 {version.parentVersionId
-                  ? `Revision of v${versions.find((parent) => parent.id === version.parentVersionId)?.version ?? 'unknown'}`
-                  : 'Original review'}
-              </small>
-              {version.id === sessionOnlyVersionId && <small>Session only</small>}
+                  ? <><GitBranch size={12} aria-hidden="true" />Revision of v{versions.find((parent) => parent.id === version.parentVersionId)?.version ?? 'unknown'}</>
+                  : 'Original review · independent'}
+              </span>
+              {version.id === sessionOnlyVersionId && <small className="history-session-only">Session only</small>}
+              {activeVersionId === version.id && <span className="history-selected">Selected</span>}
             </button>
           </li>
         ))}
@@ -471,7 +533,10 @@ function ReviewComparisonPanel({
     return (
       <section className="review-comparison" aria-label="Review comparison">
         <h3>Review comparison</h3>
-        <p>This is the original review; there is no parent version to compare.</p>
+        <p className="comparison-state">
+          <GitBranch size={14} aria-hidden="true" />
+          <span>This is the original review, an independent review; there is no parent version to compare.</span>
+        </p>
       </section>
     )
   }
@@ -479,7 +544,11 @@ function ReviewComparisonPanel({
     return (
       <section className="review-comparison" aria-label="Review comparison">
         <h3>Review comparison</h3>
-        <p>Parent review v{comparison.parentVersionId} is unavailable. No comparison was inferred.</p>
+        <p className="comparison-state missing-parent">
+          <FileWarning size={15} aria-hidden="true" />
+          <span>Parent version is unavailable. No comparison was inferred.</span>
+        </p>
+        <code className="missing-parent-id">{comparison.parentVersionId}</code>
       </section>
     )
   }
@@ -502,16 +571,17 @@ function ReviewComparisonPanel({
         </div>
       </div>
       {findings.length === 0
-        ? <p className="comparison-empty">No findings in either review.</p>
+        ? <p className="comparison-empty"><Check size={14} aria-hidden="true" />No findings in either review.</p>
         : (
           <div className="comparison-findings">
             {findings.map((item) => (
               <article className={`comparison-finding ${item.kind}`} key={item.findingId}>
                 <header>
                   <code>{item.findingId}</code>
-                  <strong>
-                    {item.kind === 'added' ? 'New finding' : item.kind === 'removed' ? 'Removed finding' : item.kind === 'changed' ? 'Changed finding' : 'Unchanged'}
-                  </strong>
+                  <span className={`comparison-kind ${item.kind}`}>
+                    <ComparisonKindIcon kind={item.kind} />
+                    {item.kind === 'added' ? 'Added finding' : item.kind === 'removed' ? 'Removed finding' : item.kind === 'changed' ? 'Changed finding' : 'Unchanged'}
+                  </span>
                 </header>
                 {item.kind === 'changed' && (
                   <p className="comparison-change-labels">
@@ -525,8 +595,14 @@ function ReviewComparisonPanel({
                 {comparisonFields.map((field) => (
                   <div className="comparison-detail-row" key={field}>
                     <strong>{comparisonFieldLabels[field]}</strong>
-                    <p>{comparisonFieldValue(item.parentFinding, field)}</p>
-                    <p>{comparisonFieldValue(item.selectedFinding, field)}</p>
+                    <p>
+                      <span className="comparison-mobile-label">Parent v{parent.version}</span>
+                      {comparisonFieldValue(item.parentFinding, field)}
+                    </p>
+                    <p>
+                      <span className="comparison-mobile-label">Selected v{selected.version}</span>
+                      {comparisonFieldValue(item.selectedFinding, field)}
+                    </p>
                   </div>
                 ))}
               </article>
@@ -535,6 +611,13 @@ function ReviewComparisonPanel({
         )}
     </section>
   )
+}
+
+function ComparisonKindIcon({ kind }: { kind: 'added' | 'removed' | 'changed' | 'unchanged' }) {
+  if (kind === 'added') return <Check size={13} aria-hidden="true" />
+  if (kind === 'removed') return <X size={13} aria-hidden="true" />
+  if (kind === 'changed') return <PencilLine size={13} aria-hidden="true" />
+  return <span className="comparison-unchanged-mark" aria-hidden="true">=</span>
 }
 
 function NextSteps({ result }: { result: ReviewResult }) {
@@ -565,11 +648,11 @@ function LoadingResult() {
 function EmptyResult() {
   return (
     <div className="result-state empty-result">
-      <div className="state-icon empty"><RotateCcw size={18} /></div>
+      <div className="state-icon empty"><CircleDashed size={18} /></div>
       <div>
         <p className="state-kicker">No review yet</p>
-        <h3>Select a scenario or write a proposal</h3>
-        <p>Review results will link exact project decisions to exact proposal evidence.</p>
+        <h3>Write a proposal to begin</h3>
+        <p>Enter your proposal, then run a review to see linked baseline requirements, exact proposal evidence, and the explanation behind each finding.</p>
       </div>
     </div>
   )

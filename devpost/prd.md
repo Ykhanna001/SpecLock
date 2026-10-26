@@ -62,8 +62,9 @@ Definite and potential findings must be distinguished by both labels and visual 
 
 ### Proposal Scenarios and Input
 
-- The proposal workspace defaults to the three seeded scenarios: definite conflict, compatible change, and ambiguous proposal.
-- Selecting a seeded scenario replaces the proposal text with that scenario.
+- The proposal workspace opens with an empty proposal text area and a helpful placeholder.
+- The three scenario selectors choose a test category only; they never populate or overwrite proposal text.
+- The developer must enter and may edit or clear proposal text before review. Empty or whitespace-only submissions are blocked with an accessible validation message.
 - The developer may edit any seeded or custom proposal before review.
 - An empty or whitespace-only proposal is not submitted and shows a concise error with the needed correction.
 - Review begins immediately only after Review Proposal is activated.

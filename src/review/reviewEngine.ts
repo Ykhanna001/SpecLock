@@ -35,12 +35,13 @@ function reviewCustomProposal(
 ): ReviewResult {
   const lower = proposalText.toLowerCase()
 
-  const externalTransmission = /(send|transmit|upload|export|sync|share)\b/.test(lower) && /(third.party|external|cloud|server|api|service|analytics)./.test(lower)
+  const describesTransmission = /(send|sends|sent|transmit|transmits|transmitted|upload|uploads|uploaded|export|exports|exported|sync|synchronize|synchronizes|synchronized|share|shares|shared)\b/.test(lower)
+  const namesExternalDestination = /(third.party|external|cloud|server|api|service|analytics)./.test(lower)
+  const externalTransmission = describesTransmission && namesExternalDestination
   const personalData = /(email address|user identity|account identifier|contact information|message content)/.test(lower)
 
   if (externalTransmission && personalData) {
-    const matchedExternal = proposalText.match(/third[- ]party|external|send|transmit|upload|sync/i)?.[0] ?? proposalText.trim()
-    const externalExcerpt = extractProposalExcerpt(proposalText, matchedExternal) ?? proposalText.trim()
+    const externalExcerpt = proposalText.trim()
     const requirementIds = ['SEC-001', 'PRIV-001', 'EXC-001']
     const findings = requirementIds.map((requirementId, index) => {
       const requirement = baseline.find((item) => item.id === requirementId)
